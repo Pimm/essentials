@@ -1,0 +1,5 @@
+-main Demo
+-cp piro/examples
+-cp piro/source
+-js piro/bin/demo.js
+-cmd open piro/bin/demo.html
