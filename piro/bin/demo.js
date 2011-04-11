@@ -518,6 +518,8 @@ StringBuf.prototype.__class__ = StringBuf;
 jjd.IBond = function() { }
 jjd.IBond.__name__ = ["jjd","IBond"];
 jjd.IBond.prototype.update = null;
+jjd.IBond.prototype.halt = null;
+jjd.IBond.prototype.resume = null;
 jjd.IBond.prototype.__class__ = jjd.IBond;
 jjd.Bond = function(f,a,b) {
 	if( f === $_ ) return;
@@ -568,10 +570,17 @@ jjd.Bond2.prototype.a = null;
 jjd.Bond2.prototype.b = null;
 jjd.Bond2.prototype.c = null;
 jjd.Bond2.prototype._halt = null;
+jjd.Bond2.prototype.halt = function() {
+	this._halt = true;
+}
+jjd.Bond2.prototype.resume = function() {
+	this._halt = false;
+}
 jjd.Bond2.prototype.update = function() {
-	if(this._halt && jjd.Bond.allSet([this.a,this.b])) this.c.yield(this.f(this.a._checkval(),this.b._checkval()));
+	if(!this._halt && jjd.Bond.allSet([this.a,this.b])) this.c.yield(this.f(this.a._checkval(),this.b._checkval()));
 }
 jjd.Bond2.prototype.__class__ = jjd.Bond2;
+jjd.Bond2.__interfaces__ = [jjd.IBond];
 jjd.Bond3 = function(f,a,b,c,d) {
 	if( f === $_ ) return;
 	this.f = f;
@@ -579,6 +588,7 @@ jjd.Bond3 = function(f,a,b,c,d) {
 	this.b = b;
 	this.c = c;
 	this.d = d;
+	this._halt = false;
 }
 jjd.Bond3.__name__ = ["jjd","Bond3"];
 jjd.Bond3.prototype.f = null;
@@ -586,10 +596,18 @@ jjd.Bond3.prototype.a = null;
 jjd.Bond3.prototype.b = null;
 jjd.Bond3.prototype.c = null;
 jjd.Bond3.prototype.d = null;
+jjd.Bond3.prototype._halt = null;
+jjd.Bond3.prototype.halt = function() {
+	this._halt = true;
+}
+jjd.Bond3.prototype.resume = function() {
+	this._halt = false;
+}
 jjd.Bond3.prototype.update = function() {
-	if(jjd.Bond.allSet([this.a,this.b,this.c])) this.d.yield(this.f(this.a._checkval(),this.b._checkval(),this.c._checkval()));
+	if(!this._halt && jjd.Bond.allSet([this.a,this.b,this.c])) this.d.yield(this.f(this.a._checkval(),this.b._checkval(),this.c._checkval()));
 }
 jjd.Bond3.prototype.__class__ = jjd.Bond3;
+jjd.Bond3.__interfaces__ = [jjd.IBond];
 IntIter = function(min,max) {
 	if( min === $_ ) return;
 	this.min = min;

@@ -2,6 +2,8 @@ package jjd;
 
 interface IBond{
 	public function update():Void;
+	public function halt():Void;
+	public function resume():Void;
 }
 
 
@@ -51,29 +53,35 @@ class Bond2<A,B,C> implements IBond {
 		this.c = c;
 		_halt = false;
 	}
+	public function halt(){ _halt = true; }
+	public function resume(){ _halt = false; }
 	
 	public function update(){
-		if (_halt && Bond.allSet(cast [a,b])) c.yield(f(a.val, b.val));
+		if (!_halt && Bond.allSet(cast [a,b])) c.yield(f(a.val, b.val));
 	}
 }
 
-class Bond3<A,B,C,D> {
+class Bond3<A,B,C,D> implements IBond {
 	private var f:A->B->C->D;
 	private var a:Async<A>;	
 	private var b:Async<B>;
 	private var c:Async<C>;
 	private var d:Async<D>;
-	
+	private var _halt:Bool;
 	public function new( f:A->B->C->D, a:Async<A>, b:Async<B>, c:Async<C>, d:Async<D>){
 		this.f = f;
 		this.a = a;
 		this.b = b;
 		this.c = c;
-		this.d = d;		
+		this.d = d;	
+		_halt = false;	
 	}
 	
+	public function halt(){ _halt = true; }
+	public function resume(){ _halt = false; }
+	
 	public function update(){
-		if (Bond.allSet(cast [a,b,c])) d.yield(f(a.val, b.val,c.val));
+		if (!_halt && Bond.allSet(cast [a,b,c])) d.yield(f(a.val, b.val, c.val));
 	}
 }
 

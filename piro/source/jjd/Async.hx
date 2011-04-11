@@ -16,7 +16,6 @@ class Async<T>{
 	public function yield(val:T){
 		set = true;
 		this._val = val;
-		
 		for (b in _bond_update)	b.update();
 	}
 	
@@ -58,8 +57,8 @@ class Async2{
 	public static function wait<A,B,C>(f:A->B->C, a:Async<A>, b:Async<B>):Async<C>{
 		var ret = new Async<C>();
 		var bnd = new Bond2<A,B,C>(f,a,b,ret);
-		a.addBond(cast bnd);
-		b.addBond(cast bnd);
+		a.addBond(bnd);
+		b.addBond(bnd);
 		bnd.update();
 		return ret;
 	}
@@ -67,8 +66,8 @@ class Async2{
 	public static function bind<A,B,C>(f:A->B->C, a:Async<A>, b:Async<B>):Bond2<A,B,C>{
 		var ret = new Async<C>();
 		var bnd = new Bond2<A,B,C>(f,a,b,ret);
-		a.addBond(cast bnd);
-		b.addBond(cast bnd);
+		a.addBond(bnd);
+		b.addBond(bnd);
 		bnd.update();
 		return bnd;
 	}
@@ -78,9 +77,9 @@ class Async3{
 	public static function wait<A,B,C,D>(f:A->B->C->D, a:Async<A>, b:Async<B>, c:Async<C>):Async<D>{
 		var ret = new Async<D>();
 		var bnd = new Bond3<A,B,C,D>(f,a,b,c,ret);
-		a.addBond(cast bnd);
-		b.addBond(cast bnd);
-		c.addBond(cast bnd); 
+		a.addBond(bnd);
+		b.addBond(bnd);
+		c.addBond(bnd); 
 		bnd.update();
 		return ret;
 	}
@@ -88,9 +87,9 @@ class Async3{
 	public static function bind<A,B,C,D>(f:A->B->C->D, a:Async<A>, b:Async<B>, c:Async<C>):Bond3<A,B,C,D>{
 		var ret = new Async<D>();
 		var bnd = new Bond3<A,B,C,D>(f,a,b,c,ret);
-		a.addBond(cast bnd);
-		b.addBond(cast bnd);
-		c.addBond(cast bnd);
+		a.addBond(bnd);
+		b.addBond(bnd);
+		c.addBond(bnd);
 		bnd.update();
 		return bnd;
 	}
