@@ -19,16 +19,19 @@
  * case the provisions of that license are applicable instead of those above.
  */
 package piro;
+import piro.Bond;
 
 /**
  * An asynchronous value. A value that will be filled in at some point in the future, such as a document that is being
  * downloaded from the Internet; or the contents of a form the user is currently filling in.
+ * 
+ * You can construct instances of this class wherever you want to return asynchronous values.
  */
 class Async<Type> {
 	/**
 	 * A fake bond before the first real bond and after the last real one.
 	 */
-	private var sentinel:AsyncBond<Type>;
+	private var sentinel:AsyncBond<Type, Void>;
 	/**
 	 * The value of this asynchronous value wrapper.
 	 */
@@ -55,36 +58,17 @@ class Async<Type> {
 		#end
 	}
 	/**
-	 * Cancels the notification of the passed listener when this value is filled in. This method reverses the effect of the
-	 * notify method.
-	 * 
-	 * If the passed listener is not registered to be notified, calling this method has no effect. If the passed listener is
-	 * registered to be notified more than once, only one registration will be removed.
-	 */
-	public function cancel(listener:Type -> Dynamic):Void {
-		// Find the matching bond.
-		if (null != sentinel) {
-			var bond:AsyncBond<Type> = sentinel.next;
-			while (null != bond.listener) {
-				// If the matching bond is found, unlink it.
-				if (Reflect.compareMethods(bond.listener, listener)) {
-					bond.unlink();
-					return;
-				}
-				bond = bond.next;
-			}
-		}
-	}
-	/**
 	 * Notifies the passed listener when this value is filled in. If this value has already been filled in, the passed listener
 	 * will be notified immediately, synchronous, without delay. So note that the listener you pass might be notified directly.
 	 * 
-	 * Returns a bond that represents the connection between this asynchronous value and the passed listener. This connection can
-	 * broken either by calling the cancel method of the asynchronous value, or the destroy method of the returned bond.
+	 * Returns the result of the passed listener as an asynchronous value.
+	 * 
+	 * If you pass a bond holder, the bond will be injected into it. You can then use that bond to unbind this asynchronous value
+	 * and the passed listener.
 	 * 
 	 * Listeners will be notified in the order in which they are added.
 	 */
-	public function notify(listener:Type -> Dynamic):Bond {
+	public function bind<ReturnType>(listener:Type -> ReturnType, ?bondHolder:Bond):Async<ReturnType> {
 		#if !production
 		// If the passed listener is null, throw an exception. Having null for a listener will produce errors when the value is
 		// yielded.
@@ -94,26 +78,55 @@ class Async<Type> {
 		#end
 		// If this value is already yielded, notify the listener immediately.
 		if (yielded) {
-			listener(value);
-			// Return a bond that does nothing, also known as a null object. This is better than actually returning null, because
-			// if this method would return null, the caller would have to perform a null check.
-			return new Bond();
+			return new Sync<ReturnType>(listener(value));
 		// If this value has not yet been yielded create a bond that contains the listener, so the listener can be notified as soon
 		// as this value is yielded.
 		} else {
-			var bond:AsyncBond<Type> = new AsyncBond();
+			var bond:AsyncBond<Type, ReturnType> = new AsyncBond();
 			bond.listener = listener;
 			// Link the newly created bond.
 			if (null == sentinel) {
-				bond.next = bond.previous = sentinel = new AsyncBond<Type>();
+				bond.next = bond.previous = sentinel = new AsyncBond<Type, Void>();
 				sentinel.next = sentinel.previous = bond;
 			} else {
 				bond.next = sentinel;
 				bond.previous = sentinel.previous;
 				sentinel.previous = sentinel.previous.next = bond;
 			}
-			// Return the bond.
-			return bond;
+			// If a bond holder was passed, inject the bond into it.
+			if (null != bondHolder) {
+				#if !production
+				try {
+					cast(bondHolder, BondHolder);
+				} catch (exception:Dynamic) {
+					throw "Argument bondHolder should be of the type BondHolder instead of the type " + TypeTools.getShortClassName(bondHolder);
+				}
+				#end
+				untyped(bondHolder).innerBond = bond;
+			}
+			// Create and return the asynchronous return value.
+			return bond.result = new Async<ReturnType>(Async);
+		}
+	}
+	/**
+	 * Cancels the notification of the passed listener when this value is filled in. This method reverses the effect of the
+	 * bind method.
+	 * 
+	 * If the passed listener is not registered to be notified, calling this method has no effect. If the passed listener is
+	 * registered to be notified more than once, only one registration will be removed.
+	 */
+	public function unbind<ReturnType>(listener:Type -> ReturnType):Void {
+		// Find the matching bond.
+		if (null != sentinel) {
+			var bond:AsyncBond<Type, Dynamic> = sentinel.next;
+			while (null != bond.listener) {
+				// If the matching bond is found, unlink it.
+				if (Reflect.compareMethods(bond.listener, listener)) {
+					bond.unlink();
+					return;
+				}
+				bond = bond.next;
+			}
 		}
 	}
 	#if debug
@@ -143,7 +156,7 @@ class Async<Type> {
 	}
 	#end
 	/**
-	 * Yields, fills in, the value. This method may only be called by the yielder.
+	 * Fills in the value. This method may only be called by the yielder.
 	 * 
 	 * If this method has been called before, calling this method has no effect.
 	 * 
@@ -165,9 +178,9 @@ class Async<Type> {
 		yielded = true;
 		// Notify the listeners through the bonds.
 		if (null != sentinel) {
-			var bond:AsyncBond<Type> = sentinel.next;
+			var bond:AsyncBond<Type, Dynamic> = sentinel.next;
 			while (null != bond.listener) {
-				bond.listener(value);
+				bond.result.yield(bond.listener(value));
 				bond = bond.next;
 			}
 			// Remove the references to the bonds. They are no longer needed.
@@ -182,7 +195,7 @@ typedef Yielder = {}
 /**
  * A linked bond used by the Async class.
  */
-class AsyncBond<Type> extends Bond {
+class AsyncBond<Type, ReturnType> extends Bond {
 	/**
 	 * Whether this bond has been destroyed (false) or not (true).
 	 */
@@ -190,15 +203,19 @@ class AsyncBond<Type> extends Bond {
 	/**
 	 * The actual listener, or null if this bond is the sentinel.
 	 */
-	public var listener:Type -> Dynamic;
+	public var listener:Type -> ReturnType;
 	/**
 	 * A reference to the next bond.
 	 */
-	public var next:AsyncBond<Type>;
+	public var next:AsyncBond<Type, Dynamic>;
 	/**
 	 * A reference to the previous bond.
 	 */
-	public var previous:AsyncBond<Type>;
+	public var previous:AsyncBond<Type, Dynamic>;
+	/**
+	 * The result of the listener as an asynchronous value.
+	 */
+	public var result:Async<ReturnType>;
 	/**
 	 * Creates a new Async bond.
 	 */
@@ -216,28 +233,21 @@ class AsyncBond<Type> extends Bond {
 		if (inUse) {
 			previous.next = next;
 			next.previous = previous;
-			listener = null;
 			inUse = false;
+			// Clean up the mess, help the garbage collector.
+			listener = null;
 		}
 	}
 }
-class WaitFor1 {
-	/**
-	 * Notifies this function when the passed asynchronous value is filled in. If the passed asynchronous value has already been
-	 * filled in, this function will be notified immediately, synchronous, without delay. So note that this function might be
-	 * notified directly.
-	 * 
-	 * Returns a bond that represents the connection between the passed asynchronous value and this function. This connection can
-	 * be broken either by calling the destroy method of the returned bond.
-	 */
-	public static inline function waitFor<Type>(listener:Type -> Dynamic, value:Async<Type>):Bond {
-		return value.notify(listener);
+class Wait1 {
+	public static inline function wait<Type, ReturnType>(listener:Type -> ReturnType, value:Async<Type>, ?bondHolder:Bond):Async<ReturnType> {
+		return value.bind(listener, bondHolder);
 	}
 }
 /**
- * A linked bond used by the WaitFor2 class.
+ * A linked bond used by the Wait2 class.
  */
-class WaitFor2Bond<FirstType, SecondType> extends Bond {
+class Wait2Bond<FirstType, SecondType, ReturnType> extends Bond {
 	/**
 	 * The bond between the callListenerIfYielded method of this bond and the first asynchronous value.
 	 */
@@ -249,7 +259,11 @@ class WaitFor2Bond<FirstType, SecondType> extends Bond {
 	/**
 	 * The actual listener, or null if this bond is the sentinel.
 	 */
-	public var listener:FirstType -> SecondType -> Dynamic;
+	public var listener:FirstType -> SecondType -> ReturnType;
+	/**
+	 * The result of the listener as an asynchronous value.
+	 */
+	public var result:Async<ReturnType>;
 	/**
 	 * The bond between the callListenerIfYielded method of this bond and the second asynchronous value.
 	 */
@@ -259,25 +273,29 @@ class WaitFor2Bond<FirstType, SecondType> extends Bond {
 	 */
 	private var secondValue:{var value:SecondType; var yielded:Bool;};
 	/**
-	 * Creates a new WaitFor2 bond.
+	 * Creates a new Wait2 bond.
 	 */
-	public function new(listener:FirstType -> SecondType -> Dynamic, firstValue:Async<FirstType>, secondValue:Async<SecondType>):Void {
+	public function new(listener:FirstType -> SecondType -> ReturnType, firstValue:Async<FirstType>, secondValue:Async<SecondType>):Void {
 		super();
+		result = new Async(this);
 		this.listener = listener;
 		this.firstValue = untyped firstValue;
 		this.secondValue = untyped secondValue;
 		// Call the callListenerIfYielded method directly, just in case both asynchronous values are aleady yielded.
 		if (notifyListenerIfYielded()) {
-			firstBond = firstValue.notify(notifyListenerIfYielded);
-			secondBond = secondValue.notify(notifyListenerIfYielded);
+			firstBond = new BondHolder();
+			firstValue.bind(notifyListenerIfYielded, firstBond);
+			secondBond = new BondHolder();
+			secondValue.bind(notifyListenerIfYielded, secondBond);
 		}
 	}
 	/**
 	 * Notifies the listener if both values are yielded. Returns false if the listener has been notified.
 	 */
-	private inline function notifyListenerIfYielded(?bogus:Dynamic):Bool {
+	private function notifyListenerIfYielded(?bogus:Dynamic):Bool {
 		if (firstValue.yielded && secondValue.yielded) {
-			listener(firstValue.value, secondValue.value);
+			result.yield(listener(firstValue.value, secondValue.value));
+			// Clean up the mess, help the garbage collector.
 			firstValue = null;
 			secondValue = null;
 			listener = null;
@@ -290,22 +308,27 @@ class WaitFor2Bond<FirstType, SecondType> extends Bond {
 		if (null != firstBond) {
 			firstBond.destroy();
 			secondBond.destroy();
+			// Clean up the mess, help the garbage collector.
 			firstValue = null;
 			secondValue = null;
 			listener = null;
 		}
 	}
 }
-class WaitFor2 {
-	/**
-	 * Notifies this function when both of the passed asynchronous values are filled in. If both of the passed asynchronous
-	 * values have already been filled in, this function will be notified immediately, synchronous, without delay. So note that
-	 * this function might be notified directly.
-	 * 
-	 * Returns a bond that represents the connection between the passed asynchronous values and this function. This connection
-	 * can be broken either by calling the destroy method of the returned bond.
-	 */
-	public static inline function waitFor<FirstType, SecondType>(listener:FirstType -> SecondType -> Dynamic, firstValue:Async<FirstType>, secondValue:Async<SecondType>):Bond {
-		return new WaitFor2Bond(listener, firstValue, secondValue);
+class Wait2 {
+	public static function wait<FirstType, SecondType, ReturnType>(listener:FirstType -> SecondType -> ReturnType, firstValue:Async<FirstType>, secondValue:Async<SecondType>, ?bondHolder:Bond):Async<ReturnType> {
+		var bond:Wait2Bond<FirstType, SecondType, ReturnType> = new Wait2Bond(listener, firstValue, secondValue);
+		// If a bond holder was passed, inject the bond into it.
+		if (null != bondHolder) {
+			#if !production
+			try {
+				cast(bondHolder, BondHolder);
+			} catch (exception:Dynamic) {
+				throw "Argument bondHolder should be of the type BondHolder instead of the type " + TypeTools.getShortClassName(bondHolder);
+			}
+			#end
+			untyped(bondHolder).innerBond = bond;
+		}
+		return bond.result;
 	}
 }

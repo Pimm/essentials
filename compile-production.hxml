@@ -1,0 +1,4 @@
+-cp piro/source
+-main Main
+-js main.js
+-D production

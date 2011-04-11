@@ -21,39 +21,27 @@
 package piro;
 
 /**
- * A bond that can be halted and resumed. See the Bond class for more information.
+ * A synchronous value. This class extends the Async class, so it can be used in place of an instance of that class.
  * 
- * You should not construct instances of this class directly (unless you are looking for null object behaviour). If you write a
- * class that returns bonds, you will want to use or write a subclass of this one.
+ * You can construct instances of this class wherever you want to return a synchronous value, but the Async type is required.
  */
-class HaltableBond {
+class Sync<Type> extends Async<Type> {
 	/**
-	 * Indicates whether the bond has been halted (true) or not (false). See the halt method for more information.
+	 * Creates a new synchronous value.
 	 */
-	public var halted(default, null):Bool;
-	/**
-	 * Creates a new haltable bond.
-	 */
-	public function new():Void {
-		super();
+	public function new(value:Type):Void {
+		super(null);
+		this.value = value;
 	}
-	/**
-	 * Halts the bond. The relation between the two objects will be temporarily ceased. If the bond was already halted, calling
-	 * this method has no effect.
-	 */
-	public inline function halt():Void {
-		halted = true;
+	public override function bind<ReturnType>(listener:Type -> ReturnType, ?bondHolder:Bond):Async<ReturnType> {
+		return new Sync<ReturnType>(listener(value));
 	}
-	/**
-	 * Resumes the bond, after it has been halted by calling the halt method. If the bond was not halted, calling this method has
-	 * no effect.
-	 */
-	public inline function resume():Void {
-		halted = false;
+	public override function unbind<ReturnType>(listener:Type -> ReturnType):Void {
 	}
-	#if debug
-	private function toString():String {
-		return "[Bond]";
-	}
+	#if production
+	public override function yield(value:Type):Void {
+	#else
+	public override function yield(value:Type, ?positionInformation:haxe.PosInfos):Void {
 	#end
+	}
 }

@@ -30,7 +30,7 @@ class TypeTools {
 	 * pass an instance of the Sprite class, or the Sprite class itself, this method will return a list containing
 	 * "flash.display.Sprite", "flash.display.DisplayObjectContainer", "flash.display.InteractiveObject",
 	 * "flash.display.DisplayObject" and "flash.events.EventDispatcher".
-	 *
+	 * 
 	 * If the passed value is null or an enum, an empty list will be returned. The behaviour when passing integers or boolean
 	 * values, or even the Int class or the Bool class itself, is unpredictable. This method never returns null.
 	 */
@@ -70,5 +70,41 @@ class TypeTools {
 			#end
 		}
 		return result;
+	}
+	/**
+	 * Returns the short name of all the most derived class of the passed value is an instance of. If the passed value itself
+	 * is a class, this method will its short name. For example, if you pass an instance of the Sprite class, or the Sprite class
+	 * itself, this method will return "Sprite".
+	 * 
+	 * If the passed value is null, "null" will be returned. The behaviour when passing enums, integers or boolean values, or
+	 * even the Int class or the Bool class itself, is unpredictable. This method never returns null.
+	 */
+	public static function getShortClassName(value:Dynamic):String {
+		// TODO: Handle enums gracefully.
+		if (null == value) {
+			return "null";
+		}
+		// Retrieve the most derived class of the passed value. If the passed value is a class, use the value itself as class. If the
+		// passed value is an instance of a class, use the class the value is an instance of.
+		var valueClass:Class<Dynamic> =
+			#if js
+			untyped if (null == value.__class__) {
+				value;
+			} else {
+				value.__class__;
+			}
+			#else
+			untyped if (Std.is(value, Class)) {
+				value;
+			} else {
+				Type.getClass(value);
+			}
+			#end
+		#if js
+		return untyped(valueClass).__name__[-1 + untyped(valueClass).__name__.length];
+		#else
+		// TODO: Implement this method for other targets than JS.
+		return null;
+		#end
 	}
 }

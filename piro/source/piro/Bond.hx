@@ -50,3 +50,24 @@ class Bond {
 	}
 	#end
 }
+/**
+ * A holder for a bond. See the Bond class for more information. The bond holder can be passed as an argument to a method that
+ * cannot return a bond, because it already returns something else. That method can then inject the bond into the holder.
+ */
+class BondHolder extends Bond {
+	/**
+	 * The bond inside this bond holder.
+	 */
+	private var innerBond:Bond;
+	/**
+	 * Creates a new bond holder.
+	 */
+	public function new():Void {
+		super();
+	}
+	public override function destroy():Void {
+		if (null != innerBond) {
+			innerBond.destroy();
+		}
+	}
+}
