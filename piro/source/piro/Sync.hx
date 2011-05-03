@@ -7,7 +7,7 @@
  *	* Redistributions of this software in source form must retain or reproduce the above copyright notice, this condition and
  *	  the following disclaimer.
  *
- * THIS SOFTWARE IS PROVIDED BY THE HSL CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * THIS SOFTWARE IS PROVIDED BY THE ESSENTIALS TEAM "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
  * ESSENTIALS TEAM BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
  * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
@@ -19,6 +19,7 @@
  * case the provisions of that license are applicable instead of those above.
  */
 package piro;
+import piro.Async;
 
 /**
  * A synchronous value. This class extends the Async class, so it can be used in place of an instance of that class.
@@ -33,8 +34,8 @@ class Sync<Type> extends Async<Type> {
 		super(null);
 		this.value = value;
 	}
-	public override function bind<ReturnType>(listener:Type -> ReturnType, ?bondHolder:Bond):Async<ReturnType> {
-		return new Sync<ReturnType>(listener(value));
+	public override function bind<ReturnType>(listener:Type -> ReturnType):AsyncBond<ReturnType> {
+		return new AsyncBond<ReturnType>(new Sync<ReturnType>(listener(value)));
 	}
 	public override function unbind<ReturnType>(listener:Type -> ReturnType):Void {
 	}

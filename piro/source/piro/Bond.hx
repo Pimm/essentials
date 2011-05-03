@@ -7,7 +7,7 @@
  *	* Redistributions of this software in source form must retain or reproduce the above copyright notice, this condition and
  *	  the following disclaimer.
  *
- * THIS SOFTWARE IS PROVIDED BY THE HSL CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+ * THIS SOFTWARE IS PROVIDED BY THE ESSENTIALS TEAM "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
  * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
  * ESSENTIALS TEAM BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
  * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
@@ -49,25 +49,4 @@ class Bond {
 		return "[Bond]";
 	}
 	#end
-}
-/**
- * A holder for a bond. See the Bond class for more information. The bond holder can be passed as an argument to a method that
- * cannot return a bond, because it already returns something else. That method can then inject the bond into the holder.
- */
-class BondHolder extends Bond {
-	/**
-	 * The bond inside this bond holder.
-	 */
-	private var innerBond:Bond;
-	/**
-	 * Creates a new bond holder.
-	 */
-	public function new():Void {
-		super();
-	}
-	public override function destroy():Void {
-		if (null != innerBond) {
-			innerBond.destroy();
-		}
-	}
 }
