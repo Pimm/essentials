@@ -247,6 +247,16 @@ class LinkedAsyncBond<Type, ReturnType> extends AsyncBond<ReturnType> {
 }
 class Wait1 {
 	/**
+	 * Cancels the notification of the passed listener when this value is filled in. This method reverses the effect of the
+	 * bind method.
+	 * 
+	 * If the passed listener is not registered to be notified, calling this method has no effect. If the passed listener is
+	 * registered to be notified more than once, only one registration will be removed.
+	 */
+	public static inline function cancel<Type>(listener:Type -> Dynamic, value:Async<Type>):Void {
+		value.unbind(listener);
+	}
+	/**
 	 * Notifies this listener as soon as the passed value is filled in. If the passed value has already been filled in, this
 	 * listener will be notified immediately, synchronous, without delay. So note that the listener you call this method on might
 	 * be notified directly.

@@ -26,7 +26,7 @@ package piro;
  * You should not construct instances of this class directly (unless you are looking for null object behaviour). If you write a
  * class that returns bonds, you will want to use or write a subclass of this one.
  */
-class HaltableBond {
+class HaltableBond<DerivedType> {
 	/**
 	 * Indicates whether the bond has been halted (true) or not (false). See the halt method for more information.
 	 */
@@ -40,9 +40,12 @@ class HaltableBond {
 	/**
 	 * Halts the bond. The relation between the two objects will be temporarily ceased. If the bond was already halted, calling
 	 * this method has no effect.
+	 *
+	 * This method returns the bond itself.
 	 */
-	public inline function halt():Void {
+	public function halt():DerivedType {
 		halted = true;
+		return this;
 	}
 	/**
 	 * Resumes the bond, after it has been halted by calling the halt method. If the bond was not halted, calling this method has
