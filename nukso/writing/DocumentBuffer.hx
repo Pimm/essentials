@@ -3,8 +3,8 @@ package nukso.writing;
 /**
  * A buffer that contains the content of a document written by a document writer.
  * 
- * Objects of this type are usually constructed by document readers. You only have to implement this interface if you are
- * writing a document reader.
+ * Objects of this type are usually constructed by document writers. You only have to implement this interface if you are
+ * writing a document writer.
  */
 interface DocumentBuffer {
 	/**
