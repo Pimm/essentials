@@ -1,86 +1,50 @@
 import haxe.Timer;
 import piro.Async;
 import piro.Bond;
-using piro.Async;
+import piro.Signal;
+import piro.Sync;
+using Piro;
 
 class Main {
 	public static function main():Void {
-		// Create the random number array.
-		var numbers:Array<Int> = new Array();
-		for (number in 0...16) {
-			numbers.insert(Math.floor((1 + number) * Math.random()), number);
-		}
-		trace(numbers);
-		// Wire the function that will turn the index into a message.
-		var targetIndex:Async<Int> = new Async(Main);
-		var message:Async<String> = function(value:Int):String {
-			return if (0 > value) {
-				if (-1 == value) {
-					"The number 7 was found 1 place from the end.";
-				} else {
-					"The number 7 was found " + -value + " places from the end.";
-				}
-			} else {
-				if (1 == value) {
-					"The number 7 was found 1 place from the start.";
-				} else {
-					"The number 7 was found " + value + " places from the start.";
-				}
-			}
-		}.wait(targetIndex).result;
-		// Wire the function that will trace the message.
-		function(value:String):Void {
-			trace(value);
-		}.wait(message);
-		// Find 7, starting from the start and from the end.
-		var backwardBond:Bond = null;
-		var forwardBond:Bond = function(index:Int):Void {
-			targetIndex.yield(index);
-			// Prevent the backward finding from tracing, too.
-			backwardBond.destroy();
-		}.wait(new ForwardOccurrenceFinder().find(numbers, 7));
-		backwardBond = function(index:Int):Void {
-			targetIndex.yield(-index);
-			// Prevent the forward finding from tracing, too.
-			forwardBond.destroy();
-		}.wait(new BackwardOccurrenceFinder().find(numbers, 7));
+		new Main();
 	}
-}
-class OccurrenceFinder {
 	public function new():Void {
+		// Create the three asynchronous numbers.
+		var firstNumber:Async<Int> = new Async(this);
+		var thirdNumber:Async<Int> = new Async(this);
+		// Find the greatest common divisor of the three numbers. As you can see, there's a synchronous value in there. We mix up
+		// those things, it ain't a thing.
+		var greatestCommonDivisor:Async<Int> = findGreatestCommonDivisor3.wait(firstNumber, new Sync(1908), thirdNumber).result;
+		// Trace the greatest common divisor.
+		function(value:Int):Void {
+			trace("The greatest common divisor is " + value);
+		}.wait(greatestCommonDivisor);
+		// Fill in the asynchronous numbers.
+		firstNumber.yield(3546);
+		thirdNumber.yield(8640);
 	}
-	private function determineMatch(array:Array<Int>, targetNumber:Int, index:Int):Bool {
-		return false;
-	}
-	public function find(array:Array<Int>, targetNumber:Int):Async<Int> {
-		var result:Async<Int> = new Async(this);
-		var currentIndex:Int = 0;
-		var timer:Timer = new Timer(100);
-		var determineMatch:Array<Int> -> Int -> Int -> Bool = determineMatch;
-		timer.run = function():Void {
-			if (determineMatch(array, targetNumber, currentIndex)) {
-				result.yield(currentIndex);
-				timer.stop();
+	private static function findGreatestCommonDivisor2(a:Int, b:Int):Int {
+		return if (0 == b) {
+				a;
 			} else {
-				currentIndex++;
+				findGreatestCommonDivisor2(b, a % b);
 			}
-		}
+	}
+	private static function findGreatestCommonDivisor3(a:Int, b:Int, c:Int):Async<Int> {
+		var result:Async<Int> = new Async(Main);
+		Timer.delay(function():Void {
+			result.yield(findGreatestCommonDivisor2(findGreatestCommonDivisor2(a, b), c));
+		}, 500);
 		return result;
 	}
 }
-class ForwardOccurrenceFinder extends OccurrenceFinder {
+class Villian {
+	public var laserShotSignal:Signal<Void>;
 	public function new():Void {
-		super();
+		laserShotSignal = new Signal(this);
 	}
-	private override function determineMatch(array:Array<Int>, targetNumber:Int, index:Int):Bool {
-		return array[index] == targetNumber;
-	}
-}
-class BackwardOccurrenceFinder extends OccurrenceFinder {
-	public function new():Void {
-		super();
-	}
-	private override function determineMatch(array:Array<Int>, targetNumber:Int, index:Int):Bool {
-		return array[array.length - index - 1] == targetNumber;
+	public function shootLaser():Void {
+		laserShotSignal.dispatch();
 	}
 }
