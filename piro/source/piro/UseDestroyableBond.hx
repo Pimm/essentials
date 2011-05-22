@@ -19,32 +19,25 @@
  * case the provisions of that license are applicable instead of those above.
  */
 package piro;
-import piro.Async;
 
 /**
- * A synchronous value. This class extends the Async class, so it can be used in place of an instance of that class.
- * 
- * You can construct instances of this class wherever you want to return a synchronous value, but the Async type is required.
+ * A bond that can be destroyed on use. See the Bond class for more information.
+ *
+ * You should not construct instances of this class directly (unless you are looking for null object behaviour). If you write a
+ * class that returns bonds, you will want to use or write a subclass of this one.
  */
-class Sync<Type> extends Async<Type> {
+class UseDestroyableBond<DerivedType> extends Bond {
 	/**
-	 * Creates a new synchronous value.
+	 * Indicates whether the bond will be destroyed right after it is used (true) or not (false).
 	 */
-	public function new(value:Type):Void {
-		super(null);
-		this.value = value;
-		yielded = true;
-	}
-	public override function bind(listener:Type -> Dynamic):Bond {
-		listener(value);
-		return new Bond();
-	}
-	public override function unbind<ReturnType>(listener:Type -> ReturnType):Void {
-	}
-	#if production
-	public override function yield(value:Type):Void {
-	#else
-	public override function yield(value:Type, ?positionInformation:haxe.PosInfos):Void {
-	#end
+	private var willDestroyOnUse:Bool;
+	/**
+	 * Destroys the bond right after it is used. Whether this bond has already been used at the moment this method is called does
+	 * not matter: the bond will be destroyed on its first use after this method has been called. This method returns this bond
+	 * itself.
+	 */
+	public function destroyOnUse():DerivedType {
+		willDestroyOnUse = true;
+		return untyped(this);
 	}
 }

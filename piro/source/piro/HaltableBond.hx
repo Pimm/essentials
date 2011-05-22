@@ -21,22 +21,16 @@
 package piro;
 
 /**
- * A bond that can be halted and resumed. See the Bond class for more information.
+ * A bond that can be halted, resumed and destroyed on use. See the Bond class for more information.
  * 
  * You should not construct instances of this class directly (unless you are looking for null object behaviour). If you write a
  * class that returns bonds, you will want to use or write a subclass of this one.
  */
-class HaltableBond<DerivedType> {
+class HaltableBond<DerivedType> extends UseDestroyableBond<DerivedType> {
 	/**
 	 * Indicates whether the bond has been halted (true) or not (false). See the halt method for more information.
 	 */
 	public var halted(default, null):Bool;
-	/**
-	 * Creates a new haltable bond.
-	 */
-	public function new():Void {
-		super();
-	}
 	/**
 	 * Halts the bond. The relation between the two objects will be temporarily ceased. If the bond was already halted, calling
 	 * this method has no effect.
@@ -45,7 +39,7 @@ class HaltableBond<DerivedType> {
 	 */
 	public function halt():DerivedType {
 		halted = true;
-		return this;
+		return untyped(this);
 	}
 	/**
 	 * Resumes the bond, after it has been halted by calling the halt method. If the bond was not halted, calling this method has
@@ -54,9 +48,4 @@ class HaltableBond<DerivedType> {
 	public inline function resume():Void {
 		halted = false;
 	}
-	#if debug
-	private function toString():String {
-		return "[Bond]";
-	}
-	#end
 }

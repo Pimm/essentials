@@ -23,10 +23,10 @@ package piro;
 /**
  * A bond represents a connection between two objects, and are returned by the methods that bind the objects. Bonds encapsulate
  * the information needed to destroy the connection between two objects, or "unbind" the two objects.
- * 
+ *
  * For instance, an addMenuItem method could return a bond. Destroying the bond would have the same effect as calling the
  * removeMenuItem method.
- * 
+ *
  * You should not construct instances of this class directly (unless you are looking for null object behaviour). If you write a
  * class that returns bonds, you will want to use or write a subclass of this one.
  */
@@ -38,7 +38,7 @@ class Bond {
 	}
 	/**
 	 * Destroys the bond. The relation between the two objects is removed. A bond can not be "undestroyed".
-	 * 
+	 *
 	 * If the bond has already been destroyed, calling this method has no effect.
 	 */
 	public function destroy():Void {
